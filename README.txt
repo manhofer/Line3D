@@ -163,7 +163,7 @@ placed in the output folder and named with respect to the choosen parameters.
 Note: If you open this file in Meshlab (http://meshlab.sourceforge.net/)
 you should see a window which states "Post-Open Processing". You have to
 untick the option "Unify Duplicated Vertices" and klick OK. Then switch to
-"Wireframe", "Hidden Lines" or "Fltat Lines" modes and you should see a 
+"Wireframe", "Hidden Lines" or "Flat Lines" modes and you should see a 
 result.
 
 In addition the result is also saved as a .txt file in the following format
