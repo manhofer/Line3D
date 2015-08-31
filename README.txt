@@ -119,8 +119,7 @@ If you set it to -1, all images which share worldpoints are used (not recommende
 -b [float] - Reprojection_Error_Upper_Bound
 The error bounds (in pixels) for the affinity computation and clustering. These
 values will be projected into 3D space for 3D similarity computation (please have
-a look at the paper). If the results are too sparse, try increasing -b (default is
-3.5px).
+a look at the paper). If the results are too sparse, try increasing -b.
 
 -g [float] - Sigma_Angle
 -p [float] - Sigma_Position
