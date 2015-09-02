@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper_math.h"
 
 // internal
-#include "commons.h"
 #include "sparsematrix.h"
 #include "dataArray.h"
 
