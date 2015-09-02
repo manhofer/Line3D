@@ -94,6 +94,27 @@ namespace L3D
             return false;
     }
 
+    // sort entries for sparse affinity matrix (CLEdges)
+    static bool sortCLEdgesByCol(const CLEdge a1, const CLEdge a2)
+    {
+        if(a1.j_ < a2.j_)
+            return true;
+        else if(a1.j_ == a2.j_ && a1.i_ < a2.i_)
+            return true;
+        else
+            return false;
+    }
+
+    static bool sortCLEdgesByRow(const CLEdge a1, const CLEdge a2)
+    {
+        if(a1.i_ < a2.i_)
+            return true;
+        else if(a1.i_ == a2.i_ && a1.j_ < a2.j_)
+            return true;
+        else
+            return false;
+    }
+
     // sorting function for projected points on a line
     static bool sortPointsOnLine(const CLPointOnLine& a, const CLPointOnLine& b)
     {

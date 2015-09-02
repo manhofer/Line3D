@@ -60,7 +60,6 @@ namespace L3D
 
     // replicator dynamics diffusion
     #define L3D_DEF_PERFORM_RDD false
-    #define L3D_RDD_MAX_ITER 10
 
     // clustering
     #define L3D_MIN_AFFINITY 0.25f
@@ -178,116 +177,6 @@ namespace L3D
                                     const L3DVisualNeighbor vn2)
     {
         return (vn1.similarity_ > vn2.similarity_);
-    }
-
-    // matching pair
-    struct L3DMatchingPair
-    {
-        // src_image
-        unsigned int segID1_;
-        // tgt_image
-        unsigned int camID2_;
-        unsigned int segID2_;
-        // depths
-        float4 depths_;
-        // confidence
-        float confidence_;
-        // defines if mp is still active
-        bool active_;
-
-        // serialization
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-        {
-            ar & boost::serialization::make_nvp("segID1_", segID1_);
-            ar & boost::serialization::make_nvp("camID2_", camID2_);
-            ar & boost::serialization::make_nvp("segID2_", segID2_);
-            ar & boost::serialization::make_nvp("depths_x", depths_.x);
-            ar & boost::serialization::make_nvp("depths_y", depths_.y);
-            ar & boost::serialization::make_nvp("depths_z", depths_.z);
-            ar & boost::serialization::make_nvp("depths_w", depths_.w);
-            ar & boost::serialization::make_nvp("confidence_", confidence_);
-            ar & boost::serialization::make_nvp("active_", active_);
-        }
-    };
-
-    static bool sortMatchingPairs(const L3DMatchingPair mp1,
-                                  const L3DMatchingPair mp2)
-    {
-        if(mp1.segID1_ < mp2.segID1_)
-            return true;
-        else if(mp1.segID1_ == mp2.segID1_ && mp1.camID2_ < mp2.camID2_)
-            return true;
-        else if(mp1.segID1_ == mp2.segID1_ && mp1.camID2_ == mp2.camID2_ && mp1.segID2_ < mp2.segID2_)
-            return true;
-        else
-            return false;
-    }
-
-    static bool sortMatchingPairsByConf(const L3DMatchingPair mp1,
-                                        const L3DMatchingPair mp2)
-    {
-        return (mp1.confidence_ > mp2.confidence_);
-    }
-
-    // segment with confidence (to best match)
-    struct L3DSegmentInScope
-    {
-        unsigned int camID_;
-        unsigned int segID_;
-        float weight_;
-    };
-
-    // best match plus scope
-    struct L3DBestMatch
-    {
-        L3D::L3DMatchingPair ref_;
-        std::list<L3D::L3DSegmentInScope> scope_;
-    };
-
-    // sort entries for sparse affinity matrix
-    static bool sortAffEntriesByCol(const float4 a1, const float4 a2)
-    {
-        // affinity in z-Coordinate
-        if(int(a1.y) < int(a2.y))
-            return true;
-        else if(int(a1.y) == int(a2.y) && int(a1.x) < int(a2.x))
-            return true;
-        else
-            return false;
-    }
-
-    static bool sortAffEntriesByRow(const float4 a1, const float4 a2)
-    {
-        // affinity in z-Coordinate
-        if(int(a1.x) < int(a2.x))
-            return true;
-        else if(int(a1.x) == int(a2.x) && int(a1.y) < int(a2.y))
-            return true;
-        else
-            return false;
-    }
-
-    // sort entries for sparse affinity matrix (CLEdges)
-    static bool sortCLEdgesByCol(const CLEdge a1, const CLEdge a2)
-    {
-        if(a1.j_ < a2.j_)
-            return true;
-        else if(a1.j_ == a2.j_ && a1.i_ < a2.i_)
-            return true;
-        else
-            return false;
-    }
-
-    static bool sortCLEdgesByRow(const CLEdge a1, const CLEdge a2)
-    {
-        if(a1.i_ < a2.i_)
-            return true;
-        else if(a1.i_ == a2.i_ && a1.j_ < a2.j_)
-            return true;
-        else
-            return false;
     }
 
     struct L3DscorePlusID

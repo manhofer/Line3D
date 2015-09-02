@@ -28,6 +28,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "sparsematrix.h"
 #include "dataArray.h"
 
+// std
+#include <map>
+
+// params
+#define L3D_RDD_MAX_ITER 10
+
 namespace L3D
 {
     // constants CPU

@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // internal
-#include "commons.h"
 #include "clustering.h"
 #include "dataArray.h"
 
@@ -34,6 +33,95 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace L3D
 {
+// matching pair
+struct L3DMatchingPair
+{
+    // src_image
+    unsigned int segID1_;
+    // tgt_image
+    unsigned int camID2_;
+    unsigned int segID2_;
+    // depths
+    float4 depths_;
+    // confidence
+    float confidence_;
+    // defines if mp is still active
+    bool active_;
+
+    // serialization
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::make_nvp("segID1_", segID1_);
+        ar & boost::serialization::make_nvp("camID2_", camID2_);
+        ar & boost::serialization::make_nvp("segID2_", segID2_);
+        ar & boost::serialization::make_nvp("depths_x", depths_.x);
+        ar & boost::serialization::make_nvp("depths_y", depths_.y);
+        ar & boost::serialization::make_nvp("depths_z", depths_.z);
+        ar & boost::serialization::make_nvp("depths_w", depths_.w);
+        ar & boost::serialization::make_nvp("confidence_", confidence_);
+        ar & boost::serialization::make_nvp("active_", active_);
+    }
+};
+
+static bool sortMatchingPairs(const L3DMatchingPair mp1,
+                              const L3DMatchingPair mp2)
+{
+    if(mp1.segID1_ < mp2.segID1_)
+        return true;
+    else if(mp1.segID1_ == mp2.segID1_ && mp1.camID2_ < mp2.camID2_)
+        return true;
+    else if(mp1.segID1_ == mp2.segID1_ && mp1.camID2_ == mp2.camID2_ && mp1.segID2_ < mp2.segID2_)
+        return true;
+    else
+        return false;
+}
+
+static bool sortMatchingPairsByConf(const L3DMatchingPair mp1,
+                                    const L3DMatchingPair mp2)
+{
+    return (mp1.confidence_ > mp2.confidence_);
+}
+
+// sort entries for sparse affinity matrix
+static bool sortAffEntriesByCol(const float4 a1, const float4 a2)
+{
+    // affinity in z-Coordinate
+    if(int(a1.y) < int(a2.y))
+        return true;
+    else if(int(a1.y) == int(a2.y) && int(a1.x) < int(a2.x))
+        return true;
+    else
+        return false;
+}
+
+static bool sortAffEntriesByRow(const float4 a1, const float4 a2)
+{
+    // affinity in z-Coordinate
+    if(int(a1.x) < int(a2.x))
+        return true;
+    else if(int(a1.x) == int(a2.x) && int(a1.y) < int(a2.y))
+        return true;
+    else
+        return false;
+}
+
+// segment with confidence (to best match)
+struct L3DSegmentInScope
+{
+    unsigned int camID_;
+    unsigned int segID_;
+    float weight_;
+};
+
+// best match plus scope
+struct L3DBestMatch
+{
+    L3D::L3DMatchingPair ref_;
+    std::list<L3D::L3DSegmentInScope> scope_;
+};
+
     class SparseMatrix
     {
     public:
