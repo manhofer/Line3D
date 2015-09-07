@@ -24,8 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // external
 #include "opencv/cv.h"
-#include "opencv/highgui.h" // debug
-#include "Eigen/Eigen"
+#include "eigen3/Eigen/Eigen"
 #include "boost/filesystem.hpp"
 
 // LSD

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // external
-#include "Eigen/Eigen"
+#include "eigen3/Eigen/Eigen"
 #include "cuda.h"
 #include "helper_math.h"
 

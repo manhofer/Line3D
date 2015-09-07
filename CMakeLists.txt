@@ -69,6 +69,7 @@ endif(Boost_FOUND)
 SET(lsd_SOURCES lsd/lsd.cpp lsd/lsd_opencv.cpp lsd/lsd_wrap.cpp)
 SET(lsd_HEADERS lsd/lsd.hpp lsd/lsd_opencv.hpp lsd/lsd_wrap.hpp)
 add_library(line3D_lsd SHARED ${lsd_SOURCES} ${lsd_HEADERS})
+target_link_libraries(line3D_lsd ${OpenCV_LIBS})
 
 add_definitions(-frounding-math)
 

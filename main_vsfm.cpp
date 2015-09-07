@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tclap/CmdLineInterface.h>
 #include <boost/filesystem.hpp>
 #include <opencv/cv.h>
-#include "Eigen/Eigen"
+#include <opencv/highgui.h>
+#include "eigen3/Eigen/Eigen"
 
 // std
 #include <iostream>
