@@ -39,22 +39,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace L3D
 {
     // feature detection
-    #define L3D_DEF_SCALE_FACTOR 0.5f
+    #define L3D_DEF_MAX_IMG_WIDTH 1920
     #define L3D_DEF_MIN_LINE_LENGTH_F 0.005f
     #define L3D_DEF_MAX_NUM_SEGMENTS 3000
-    #define L3D_DEF_LOAD_AND_STORE_SEGMENTS true
+    #define L3D_DEF_LOAD_AND_STORE_SEGMENTS false
 
     // collinearity
     #define L3D_DEF_COLLINEARITY_S 2.0f
     #define L3D_DEF_COLLINEARITY_FOR_CLUSTERING true
 
     // matching
-    #define L3D_DEF_MATCHING_NEIGHBORS 12
-    #define L3D_DEF_UNCERTAINTY_UPPER_T 4.5f
-    #define L3D_DEF_UNCERTAINTY_LOWER_T 0.5f
+    #define L3D_DEF_MATCHING_NEIGHBORS 10
+    #define L3D_DEF_UNCERTAINTY_UPPER_T 5.0f
+    #define L3D_DEF_UNCERTAINTY_LOWER_T 1.0f
     #define L3D_DEF_MIN_BASELINE_T 0.25f
     // same as for GPU!
-    #define L3D_DEF_SIGMA_P 2.5f
+    #define L3D_DEF_SIGMA_P 3.5f
     #define L3D_DEF_SIGMA_A 10.0f
     #define L3D_DEF_PERFORM_3D_VERIFICATION true
 

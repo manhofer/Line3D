@@ -96,7 +96,7 @@ namespace L3D
     void Line3D::addImage(const unsigned int imageID, const cv::Mat image,
                           const Eigen::Matrix3d K, const Eigen::Matrix3d R,
                           const Eigen::Vector3d t, std::list<unsigned int>& worldpointIDs,
-                          const float scaleFactor,
+                          const int maxImgWidth,
                           const bool loadAndStoreSegments)
     {
         if(computation_)
@@ -106,9 +106,7 @@ namespace L3D
         }
 
         if(views_.size() == 0)
-           std::cout << prefix_ << ">>> LOADING DATA <<<" << std::endl;
-
-        std::cout << prefix_ << "adding image [" << imageID << "]" << std::endl;
+           std::cout << prefix_ << ">>> LOADING DATA <<<" << std::endl;     
 
         // check for unique ID
         if(views_.find(imageID) != views_.end())
@@ -130,8 +128,18 @@ namespace L3D
         }
 
         // compute new image sizes
-        unsigned int new_width = round(float(image.cols)*scaleFactor);
-        unsigned int new_height = round(float(image.rows)*scaleFactor);
+        unsigned int new_width = image.cols;
+        unsigned int new_height = image.rows;
+        float scaleFactor = 1.0f;
+
+        if(maxImgWidth > 0 && std::max(image.rows,image.cols) > maxImgWidth)
+        {
+            scaleFactor = float(maxImgWidth)/fmax(image.rows,image.cols);
+            new_width = round(float(image.cols)*scaleFactor);
+            new_height = round(float(image.rows)*scaleFactor);
+        }
+
+        std::cout << prefix_ << "adding image [" << imageID << "] [" << new_width << "x" << new_height << "]" << std::endl;
 
         // check if features already computed
         std::stringstream str;
@@ -213,7 +221,7 @@ namespace L3D
     void Line3D::addImage_fixed_sim(const unsigned int imageID, const cv::Mat image,
                                     const Eigen::Matrix3d K, const Eigen::Matrix3d R,
                                     const Eigen::Vector3d t, std::map<unsigned int,float>& viewSimilarity,
-                                    const float scaleFactor,
+                                    const int maxImgWidth,
                                     const bool loadAndStoreSegments)
     {
         if(computation_)
@@ -224,8 +232,6 @@ namespace L3D
 
         if(views_.size() == 0)
            std::cout << prefix_ << ">>> LOADING DATA <<<" << std::endl;
-
-        std::cout << prefix_ << "adding image [" << imageID << "]" << std::endl;
 
         // check for unique ID
         if(views_.find(imageID) != views_.end())
@@ -247,8 +253,18 @@ namespace L3D
         }
 
         // compute new image sizes
-        unsigned int new_width = round(float(image.cols)*scaleFactor);
-        unsigned int new_height = round(float(image.rows)*scaleFactor);
+        unsigned int new_width = image.cols;
+        unsigned int new_height = image.rows;
+        float scaleFactor = 1.0f;
+
+        if(maxImgWidth > 0 && std::max(image.rows,image.cols) > maxImgWidth)
+        {
+            scaleFactor = float(maxImgWidth)/fmax(image.rows,image.cols);
+            new_width = round(float(image.cols)*scaleFactor);
+            new_height = round(float(image.rows)*scaleFactor);
+        }
+
+        std::cout << prefix_ << "adding image [" << imageID << "] [" << new_width << "x" << new_height << "]" << std::endl;
 
         // check if features already computed
         std::stringstream str;
@@ -631,6 +647,52 @@ namespace L3D
                 std::cout << prefix_ << "GPU_mem_free: " << free_byte/(1024*1024) << "MB - GPU_mem_total: " << total_byte/(1024*1024) << "MB" << std::endl;
             }
         }
+
+        /*
+        // DEBUG: save all hypotheses and scored ones
+        std::cout << "all_hyps: " << all_matches_.size() << std::endl;
+        std::list<i3d::Line3D> all_lines;
+        std::vector<Eigen::Vector3d> all_pts;
+        std::vector<Eigen::Vector3f> all_pts_cols;
+
+        std::list<float4>::iterator m_it = all_matches_.begin();
+        std::list<float>::iterator c_it = all_confidences_.begin();
+        for(; m_it!=all_matches_.end() && c_it!=all_confidences_.end(); ++m_it,++c_it)
+        {
+            float conf = *c_it;
+            float4 data = *m_it;
+            unsigned int camID = data.x;
+            unsigned int segID = data.y;
+            float d1 = data.z;
+            float d2 = data.w;
+
+            L3D::L3DSegment3D seg3D = views_[camID]->unprojectSegment(segID,d1,d2);
+
+            i3d::Line3D l3D(seg3D.P1_,seg3D.P2_);
+            //all_lines.push_back(l3D);
+
+            // color value
+            if(conf > 1.0f)
+            {
+                Eigen::Vector3f col;
+                if(conf > 2.0f)
+                    col = Eigen::Vector3f(0,255,0);
+                else
+                    col = Eigen::Vector3f(0,0,255);
+
+                // sample as points
+                Eigen::Vector3d vec = seg3D.P2_-seg3D.P1_;
+                for(unsigned int k=0; k<25; ++k)
+                {
+                    Eigen::Vector3d P = seg3D.P1_ + float(k)/25.0f*vec;
+                    all_pts.push_back(P);
+                    all_pts_cols.push_back(col);
+                }
+            }
+        }
+
+        i3d::writePointsToPLY(all_pts,data_directory_+"/selected_matches.ply",&all_pts_cols);
+        */
     }
 
     //------------------------------------------------------------------------------
@@ -884,10 +946,12 @@ namespace L3D
                 // best match
                 best_match_[src] = C;
 
-                //std::list<std::pair<Eigen::Vector3d,Eigen::Vector3d> > segments3D;
-                //segments3D.push_back(std::pair<Eigen::Vector3d,Eigen::Vector3d>(C.src_seg3D().P1_,C.src_seg3D().P2_));
-                //L3D::L3DFinalLine3D tmp3D(segments2D,segments3D);
-                //tmp.push_back(tmp3D);
+                /*
+                std::list<std::pair<Eigen::Vector3d,Eigen::Vector3d> > segments3D;
+                segments3D.push_back(std::pair<Eigen::Vector3d,Eigen::Vector3d>(C.src_seg3D().P1_,C.src_seg3D().P2_));
+                L3D::L3DFinalLine3D tmp3D(segments2D,segments3D);
+                tmp.push_back(tmp3D);
+                */
 
                 ++clusterable;
             }

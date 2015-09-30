@@ -103,11 +103,11 @@ Path to the folder where the bundler.rd.out is located
 Output folder. If not specified, same as Input_Folder but with /Line3D/ attached
 to it (will be created automatically).
 
--c [float] - Image_Scale_Factor
-The scale factor by which the images will be downscaled before line segment
-detection. By default this is set to 0.5f, which should not be altered if
-you work with images >= 10Megapixels (the detection takes less time and the
-results do not suffer).
+-w [int] - Image_Max_Width
+The maximum width (or height, if the image is in portrait format) to which the images
+will be downscaled before line segment detection. By default this is set to 1920 (FullHD),
+which should not be altered if you work with images >= 10Megapixels
+(the detection takes less time and the results do not suffer).
 
 -n [int] - Number_of_Visual_Neighbors
 The number of images with which each image is matched. By default this is set to 12.

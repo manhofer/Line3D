@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // external
 #include "opencv/cv.h"
+//#include "opencv/highgui.h" // debug
 #include "eigen3/Eigen/Eigen"
 #include "boost/filesystem.hpp"
 
@@ -66,13 +67,13 @@ namespace L3D
         void addImage(const unsigned int imageID, const cv::Mat image,
                       const Eigen::Matrix3d K, const Eigen::Matrix3d R,
                       const Eigen::Vector3d t, std::list<unsigned int>& worldpointIDs,
-                      const float scaleFactor=L3D_DEF_SCALE_FACTOR,
+                      const int maxImgWidth=L3D_DEF_MAX_IMG_WIDTH,
                       const bool loadAndStoreSegments=L3D_DEF_LOAD_AND_STORE_SEGMENTS);
 
         void addImage_fixed_sim(const unsigned int imageID, const cv::Mat image,
                                 const Eigen::Matrix3d K, const Eigen::Matrix3d R,
                                 const Eigen::Vector3d t, std::map<unsigned int,float>& viewSimilarity,
-                                const float scaleFactor=L3D_DEF_SCALE_FACTOR,
+                                const int maxImgWidth=L3D_DEF_MAX_IMG_WIDTH,
                                 const bool loadAndStoreSegments=L3D_DEF_LOAD_AND_STORE_SEGMENTS);
 
         // reconstructs 3D model

@@ -252,7 +252,7 @@ namespace L3D
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    __device__ float3 normalize_hom_coords_2D(float3 p)
+    __device__ float3 D_normalize_hom_coords_2D(float3 p)
     {
         if(fabs(p.z) > L3D_EPS_G)
         {
@@ -382,25 +382,16 @@ namespace L3D
                                              const float3 Q1, const float3 Q2,
                                              const float3 C, const int tgtID,
                                              const float sigma_p, const float sigma_a,
-                                             const float spatial_k, const float median_depth)
+                                             const float spatial_k)
     {
         // check 3D distances
-        if(spatial_k > 0.0f && median_depth > 0.0f)
+        if(spatial_k > 0.0f)
         {
             float depth1 = length(C-P1);
             float depth2 = length(C-P2);
 
-            float unc1,unc2;
-
-            if(depth1 < median_depth)
-                unc1 = spatial_k*depth1;
-            else
-                unc1 = spatial_k*median_depth;
-
-            if(depth2 < median_depth)
-                unc2 = spatial_k*depth2;
-            else
-                unc2 = spatial_k*median_depth;
+            float unc1 = spatial_k*depth1;
+            float unc2 = spatial_k*depth2;
 
             float dist1 = length(P1-Q1);
             float dist2 = length(P2-Q2);
@@ -576,10 +567,10 @@ namespace L3D
             float3 epi_q2 = D_epipolar_line(q2,cID,true);
 
             // intersect
-            float3 l2_p1 = normalize_hom_coords_2D(cross(line2,epi_p1));
-            float3 l2_p2 = normalize_hom_coords_2D(cross(line2,epi_p2));
-            float3 l1_q1 = normalize_hom_coords_2D(cross(line1,epi_q1));
-            float3 l1_q2 = normalize_hom_coords_2D(cross(line1,epi_q2));
+            float3 l2_p1 = D_normalize_hom_coords_2D(cross(line2,epi_p1));
+            float3 l2_p2 = D_normalize_hom_coords_2D(cross(line2,epi_p2));
+            float3 l1_q1 = D_normalize_hom_coords_2D(cross(line1,epi_q1));
+            float3 l1_q2 = D_normalize_hom_coords_2D(cross(line1,epi_q2));
 
             if(int(l2_p1.z) == 0 || int(l2_p2.z) == 0 ||
                     int(l1_q1.z) == 0 || int(l1_q2.z) == 0)
@@ -620,12 +611,13 @@ namespace L3D
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    __global__ void K_verify_matches(float* matches, const int2* match_offsets,
+    __global__ void K_verify_matches(float4* matches_data, float4* matches_depths,
+                                     const int2* match_offsets,
                                      const int2* camera_offsets, const int size,
                                      const float* RtKinv, const float3 C_src,
                                      const float sigma_p, const float sigma_a,
-                                     const float spatial_k, const float median_depth,
-                                     const int stride, const int r_stride)
+                                     const float spatial_k,
+                                     const int r_stride)
     {
         int x = blockIdx.x*blockDim.x + threadIdx.x;
         int y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -633,12 +625,14 @@ namespace L3D
         if(x == 0 && y < size)
         {
             // match data
-            int srcID = matches[y*stride];
-            int camID = matches[y*stride+1];
+            float4 data = matches_data[y];
+            int srcID = data.x;
+            int camID = data.y;
 
             // depth
-            float depth_p1 = matches[y*stride+3];
-            float depth_p2 = matches[y*stride+4];
+            float4 depths = matches_depths[y];
+            float depth_p1 = depths.x;
+            float depth_p2 = depths.y;
 
             // segment data
             float3 p1 = make_float3(tex2D(tex_segments,0.5f,srcID+0.5f),
@@ -665,13 +659,15 @@ namespace L3D
                     continue;
 
                 // match data
-                int camID2 = matches[i*stride+1];
-                int tgtID2 = matches[i*stride+2];
+                float4 data_tgt = matches_data[i];
+                int camID2 = data_tgt.y;
+                int tgtID2 = data_tgt.z;
                 int camFeatureOffset = camera_offsets[camID2].x;
 
                 // unproject
-                float depth_q1 = matches[i*stride+3];
-                float depth_q2 = matches[i*stride+4];
+                float4 depths_tgt = matches_depths[i];
+                float depth_q1 = depths_tgt.x;
+                float depth_q2 = depths_tgt.y;
                 float3 Q1 = D_unproject_point_src(p1,C_src,depth_q1,RtKinv,r_stride);
                 float3 Q2 = D_unproject_point_src(p2,C_src,depth_q2,RtKinv,r_stride);
 
@@ -698,8 +694,7 @@ namespace L3D
                 {
                     float conf = D_hypothesis_confidence(proj1,proj2,P1,P2,Q1,Q2,
                                                          C_src,tgtID2+camFeatureOffset,
-                                                         sigma_p,sigma_a,
-                                                         spatial_k,median_depth);
+                                                         sigma_p,sigma_a,spatial_k);
 
                     if(conf > 0.5f)
                     {
@@ -714,7 +709,7 @@ namespace L3D
             confidence += current_confidence;
 
             // store confidence
-            matches[y*stride+7] = confidence;
+            matches_data[y].w = confidence;
         }
     }
 
@@ -961,7 +956,8 @@ namespace L3D
         if(matches.size() == 0)
             return;
 
-        L3D::DataArray<float>* rawMatches = new L3D::DataArray<float>(8,matches.size());
+        L3D::DataArray<float4>* rawMatches_data = new L3D::DataArray<float4>(matches.size(),1);
+        L3D::DataArray<float4>* rawMatches_depths = new L3D::DataArray<float4>(matches.size(),1);
         L3D::DataArray<int2>* matchOffset = new L3D::DataArray<int2>(height,1);
         matchOffset->setValue(make_int2(-1,-1));
 
@@ -991,14 +987,12 @@ namespace L3D
                 current_seg = mp.segID1_;
             }
 
-            rawMatches->dataCPU(0,pos)[0] = current_seg;
-            rawMatches->dataCPU(1,pos)[0] = mp.camID2_;
-            rawMatches->dataCPU(2,pos)[0] = mp.segID2_;
-            rawMatches->dataCPU(3,pos)[0] = mp.depths_.x;
-            rawMatches->dataCPU(4,pos)[0] = mp.depths_.y;
-            rawMatches->dataCPU(5,pos)[0] = mp.depths_.z;
-            rawMatches->dataCPU(6,pos)[0] = mp.depths_.w;
-            rawMatches->dataCPU(7,pos)[0] = 0.0f;  // confidence
+            float4 data = make_float4(current_seg,mp.camID2_,mp.segID2_,0.0f);
+            float4 depths = make_float4(mp.depths_.x,mp.depths_.y,
+                                        mp.depths_.z,mp.depths_.w);
+
+            rawMatches_data->dataCPU(pos,0)[0] = data;
+            rawMatches_depths->dataCPU(pos,0)[0] = depths;
 
             ++num_matches;
         }
@@ -1009,23 +1003,25 @@ namespace L3D
                                                                num_matches);
         }
 
-        rawMatches->upload();
+        rawMatches_data->upload();
+        rawMatches_depths->upload();
         matchOffset->upload();
 
         dimBlock = dim3(1,block_size*block_size);
         dimGrid = dim3(divUp(1, dimBlock.x),
-                       divUp(rawMatches->height(), dimBlock.y));
+                       divUp(rawMatches_data->width(), dimBlock.y));
 
-        L3D::K_verify_matches <<< dimGrid, dimBlock >>> (rawMatches->dataGPU(),matchOffset->dataGPU(),
-                                                         offsets->dataGPU(),rawMatches->height(),
+        L3D::K_verify_matches <<< dimGrid, dimBlock >>> (rawMatches_data->dataGPU(),
+                                                         rawMatches_depths->dataGPU(),
+                                                         matchOffset->dataGPU(),
+                                                         offsets->dataGPU(),rawMatches_data->width(),
                                                          RtKinv_src->dataGPU(),camCenter_src,
-                                                         sigma_p,sigma_a,-1.0f,-1.0f,
-                                                         rawMatches->strideGPU(),
+                                                         sigma_p,sigma_a,-1.0f,
                                                          RtKinv_src->strideGPU());
 
         // download
         matches.clear();
-        rawMatches->download();
+        rawMatches_data->download();
 
         std::vector<float> depths;
         float conf_t = 1.00f;
@@ -1046,7 +1042,7 @@ namespace L3D
 
                 for(int k=start; k<end; ++k)
                 {
-                    float conf = rawMatches->dataCPU(7,k)[0];
+                    float conf = rawMatches_data->dataCPU(k,0)[0].w;
 
                     if(conf > conf_t)
                         ++num_valid;
@@ -1055,8 +1051,8 @@ namespace L3D
                     {
                         max_conf = conf;
 
-                        depth_s1 = rawMatches->dataCPU(3,k)[0];
-                        depth_s2 = rawMatches->dataCPU(4,k)[0];
+                        depth_s1 = rawMatches_depths->dataCPU(k,0)[0].x;
+                        depth_s2 = rawMatches_depths->dataCPU(k,0)[0].y;
                     }
                 }
 
@@ -1089,37 +1085,39 @@ namespace L3D
         if(verify3D)
         {
             // verify confidences (3D)
-            L3D::K_verify_matches <<< dimGrid, dimBlock >>> (rawMatches->dataGPU(),matchOffset->dataGPU(),
-                                                             offsets->dataGPU(),rawMatches->height(),
+            L3D::K_verify_matches <<< dimGrid, dimBlock >>> (rawMatches_data->dataGPU(),
+                                                             rawMatches_depths->dataGPU(),
+                                                             matchOffset->dataGPU(),
+                                                             offsets->dataGPU(),rawMatches_data->width(),
                                                              RtKinv_src->dataGPU(),camCenter_src,
-                                                             sigma_p,sigma_a,spatial_k,median_depth,
-                                                             rawMatches->strideGPU(),
+                                                             sigma_p,sigma_a,spatial_k,
                                                              RtKinv_src->strideGPU());
 
-            rawMatches->download();
+            rawMatches_data->download();
         }
 
-        rawMatches->removeFromGPU();
+        rawMatches_data->removeFromGPU();
+        rawMatches_depths->removeFromGPU();
         matchOffset->removeFromGPU();
 
         // store result
         float confidence_norm = 2.0f;
-        for(unsigned int i=0; i<rawMatches->height(); ++i)
+        for(unsigned int i=0; i<rawMatches_data->width(); ++i)
         {
-            float conf = rawMatches->dataCPU(7,i)[0];
+            float4 data = rawMatches_data->dataCPU(i,0)[0];
+            float4 depths = rawMatches_depths->dataCPU(i,0)[0];
+
+            float conf = data.w;
             if(conf > conf_t)
             {
                 conf /= confidence_norm;
 
                 L3D::L3DMatchingPair mp;
-                mp.segID1_ = rawMatches->dataCPU(0,i)[0];
-                unsigned int locID = rawMatches->dataCPU(1,i)[0];
+                mp.segID1_ = data.x;
+                unsigned int locID = data.y;
                 mp.camID2_ = local2global[locID];
-                mp.segID2_ = rawMatches->dataCPU(2,i)[0];
-                mp.depths_ = make_float4(rawMatches->dataCPU(3,i)[0],
-                                         rawMatches->dataCPU(4,i)[0],
-                                         rawMatches->dataCPU(5,i)[0],
-                                         rawMatches->dataCPU(6,i)[0]);
+                mp.segID2_ = data.z;
+                mp.depths_ = depths;
                 mp.confidence_ = conf;
                 mp.active_ = true;
                 matches.push_back(mp);
@@ -1139,7 +1137,8 @@ namespace L3D
         cudaUnbindTexture(tex_fundamentals);
         cudaUnbindTexture(tex_projections);
 
-        delete rawMatches;
+        delete rawMatches_data;
+        delete rawMatches_depths;
         delete matchOffset;
     }
 

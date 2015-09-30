@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     TCLAP::ValueArg<std::string> outputArg("o", "output_folder", "folder where result and temporary files are stored (if not specified --> image folder)", false, "", "string");
     cmd.add(outputArg);
 
-    TCLAP::ValueArg<float> scaleArg("c", "img_scale_factor", "image scaling factor", false, L3D_DEF_SCALE_FACTOR, "float");
+    TCLAP::ValueArg<int> scaleArg("w", "max_image_width", "scale image down to fixed max width for line segment detection", false, L3D_DEF_MAX_IMG_WIDTH, "int");
     cmd.add(scaleArg);
 
     TCLAP::ValueArg<int> neighborArg("n", "num_matching_neighbors", "number of neighbors for matching (-1 --> use all)", false, L3D_DEF_MATCHING_NEIGHBORS, "int");
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     if(outputFolder.length() == 0)
         outputFolder = inputFolder+"/Line3D/";
 
-    float scale = fabs(scaleArg.getValue());
+    int max_width = scaleArg.getValue();
     int neighbors = neighborArg.getValue();
     float max_uncertainty = fabs(affUpperArg.getValue());
     float min_uncertainty = fabs(affLowerArg.getValue());
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
             }
 
             // add to system
-            line3D->addImage(i,image,K,cams_rotation[i],cams_translation[i],cams_worldpointIDs[i],scale,loadAndStore);
+            line3D->addImage(i,image,K,cams_rotation[i],cams_translation[i],cams_worldpointIDs[i],max_width,loadAndStore);
         }
         else
         {
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
     // set filename according to parameters
     std::stringstream str;
     str << "/line3D_result__";
-    str << "C_" << scale << "__";
+    str << "W_" << max_width << "__";
 
     if(neighbors < 0)
         str << "N_ALL__";
