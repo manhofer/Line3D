@@ -59,7 +59,7 @@ namespace L3D
                const float uncertainty_t_upper_2D=L3D_DEF_UNCERTAINTY_UPPER_T,
                const float uncertainty_t_lower_2D=L3D_DEF_UNCERTAINTY_LOWER_T,
                const float sigma_p=L3D_DEF_SIGMA_P, const float sigma_a=L3D_DEF_SIGMA_A,
-               const bool verify3D=L3D_DEF_PERFORM_3D_VERIFICATION, const float min_baseline=L3D_DEF_MIN_BASELINE_T,
+               const float min_baseline=L3D_DEF_MIN_BASELINE_T,
                bool useCollinearity=L3D_DEF_COLLINEARITY_FOR_CLUSTERING, bool verbose=false);
         ~Line3D();
 
@@ -119,7 +119,6 @@ namespace L3D
         std::map<unsigned int,unsigned int> local2global_;
         int matching_neighbors_;
         float min_baseline_;
-        bool verify3D_;
 
         // scoring
         float uncertainty_upper_2D_;

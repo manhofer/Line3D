@@ -67,8 +67,7 @@ namespace L3D
                                          const float uncertainty_k_upper,
                                          const float uncertainty_k_lower,
                                          const float sigma_p, const float sigma_a,
-                                         const bool verify3D, const float spatial_k,
-                                         float& median_depth,
+                                         const float spatial_k, float& median_depth,
                                          const bool verbose, const std::string prefix);
 
     // replicator dynamics diffusion [M.Donoser, BMVC'13]

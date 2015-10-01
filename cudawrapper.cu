@@ -871,8 +871,7 @@ namespace L3D
                                   const float uncertainty_k_upper,
                                   const float uncertainty_k_lower,
                                   const float sigma_p, const float sigma_a,
-                                  const bool verify3D, const float spatial_k,
-                                  float& median_depth,
+                                  const float spatial_k, float& median_depth,
                                   const bool verbose, const std::string prefix)
     {
         if(toBeMatched.size() == 0)
@@ -1016,7 +1015,7 @@ namespace L3D
                                                          matchOffset->dataGPU(),
                                                          offsets->dataGPU(),rawMatches_data->width(),
                                                          RtKinv_src->dataGPU(),camCenter_src,
-                                                         sigma_p,sigma_a,-1.0f,
+                                                         sigma_p,sigma_a,spatial_k,
                                                          RtKinv_src->strideGPU());
 
         // download
@@ -1081,20 +1080,6 @@ namespace L3D
 
         if(verbose)
             std::cout << prefix << "spatial_reg:           " << median_reg_lower << " - " << median_reg_upper << " (@depth: " << median_depth << ")" << std::endl;
-
-        if(verify3D)
-        {
-            // verify confidences (3D)
-            L3D::K_verify_matches <<< dimGrid, dimBlock >>> (rawMatches_data->dataGPU(),
-                                                             rawMatches_depths->dataGPU(),
-                                                             matchOffset->dataGPU(),
-                                                             offsets->dataGPU(),rawMatches_data->width(),
-                                                             RtKinv_src->dataGPU(),camCenter_src,
-                                                             sigma_p,sigma_a,spatial_k,
-                                                             RtKinv_src->strideGPU());
-
-            rawMatches_data->download();
-        }
 
         rawMatches_data->removeFromGPU();
         rawMatches_depths->removeFromGPU();

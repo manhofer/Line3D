@@ -127,11 +127,6 @@ Values for confidence estimation of 3D line hypotheses (again in pixels). Simila
 the two values above, but usually don't need to be changed (again, please have
 a look at the paper).
 
--r [bool] - 3D_Verification
-Verifies the confidence of 3D hypotheses in 3D space as well. Should always be switched
-on (default), switching it off might lead to denser results but will also introduce
-some outliers (most likely).
-
 -d [bool] - Diffusion
 Activates the diffusion process before clustering. Should not be used for extremely
 large datasets (>1000 images) and can in general be left disabled.

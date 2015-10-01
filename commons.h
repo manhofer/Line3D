@@ -56,7 +56,6 @@ namespace L3D
     // same as for GPU!
     #define L3D_DEF_SIGMA_P 3.5f
     #define L3D_DEF_SIGMA_A 10.0f
-    #define L3D_DEF_PERFORM_3D_VERIFICATION true
 
     // replicator dynamics diffusion
     #define L3D_DEF_PERFORM_RDD false

@@ -59,9 +59,6 @@ int main(int argc, char *argv[])
     TCLAP::ValueArg<float> sigma_P_Arg("p", "sigma_p", "position regularizer", false, L3D_DEF_SIGMA_P, "float");
     cmd.add(sigma_P_Arg);
 
-    TCLAP::ValueArg<bool> verificationArg("r", "3D_verification", "matches are not only scored in 2D but in 3D as well", false, L3D_DEF_PERFORM_3D_VERIFICATION, "bool");
-    cmd.add(verificationArg);
-
     TCLAP::ValueArg<bool> diffusionArg("d", "diffusion", "perform Replicator Dynamics Diffusion before clustering", false, L3D_DEF_PERFORM_RDD, "bool");
     cmd.add(diffusionArg);
 
@@ -95,7 +92,6 @@ int main(int argc, char *argv[])
     float sigma_a = fabs(sigma_A_Arg.getValue());
     float sigma_p = fabs(sigma_P_Arg.getValue());
     float min_baseline = fabs(minBaselineArg.getValue());
-    bool verify3D = verificationArg.getValue();
 
     std::string prefix = "[SYS] ";
 
@@ -107,7 +103,7 @@ int main(int argc, char *argv[])
     // create Line3D object
     L3D::Line3D* line3D = new L3D::Line3D(data_directory,neighbors,
                                           max_uncertainty,min_uncertainty,
-                                          sigma_p,sigma_a,verify3D,min_baseline,
+                                          sigma_p,sigma_a,min_baseline,
                                           collinearity,verbose);
 
     // read bundle.rd.out
@@ -323,11 +319,6 @@ int main(int argc, char *argv[])
         str << "COLLIN__";
     else
         str << "NO_COLLIN__";
-
-    if(verify3D)
-        str << "VERIF3D__";
-    else
-        str << "NO_VERIF3D__";
 
     if(diffusion)
         str << "DIFFUSION";

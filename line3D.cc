@@ -6,7 +6,7 @@ namespace L3D
     Line3D::Line3D(const std::string data_directory, const int matchingNeighbors,
                    const float uncertainty_t_upper_2D, const float uncertainty_t_lower_2D,
                    const float sigma_p, const float sigma_a,
-                   const bool verify3D, const float min_baseline,
+                   const float min_baseline,
                    bool useCollinearity, bool verbose)
     {
         // init
@@ -20,7 +20,6 @@ namespace L3D
         computation_ = false;
         use_collinearity_ = useCollinearity;
         min_baseline_ = min_baseline;
-        verify3D_ = verify3D;
 
         if(uncertainty_lower_2D_ < 1.0f)
             uncertainty_lower_2D_ = 1.0f;
@@ -817,7 +816,7 @@ namespace L3D
                                       maxFeatures,vID,
                                       views_[vID]->uncertainty_k_upper(),
                                       views_[vID]->uncertainty_k_lower(),
-                                      sigma_p_,sigma_a_,verify3D_,
+                                      sigma_p_,sigma_a_,
                                       views_[vID]->specificSpatialUncertaintyK(2.0f*sigma_p_),
                                       median_depth,
                                       verbose_,prefix_);
