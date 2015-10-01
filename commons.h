@@ -42,7 +42,7 @@ namespace L3D
     #define L3D_DEF_MAX_IMG_WIDTH 1920
     #define L3D_DEF_MIN_LINE_LENGTH_F 0.005f
     #define L3D_DEF_MAX_NUM_SEGMENTS 3000
-    #define L3D_DEF_LOAD_AND_STORE_SEGMENTS false
+    #define L3D_DEF_LOAD_AND_STORE_SEGMENTS true
 
     // collinearity
     #define L3D_DEF_COLLINEARITY_S 2.0f
