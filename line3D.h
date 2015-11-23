@@ -45,7 +45,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * Line3D - Base Class
  * ====================
  * Line-based Multi-view Stereo
- * Reference: [add paper]
+ * Reference:
+ * "Line3D: Efficient 3D Scene Abstraction for the Built Environment"
+ * Manuel Hofer, Michael Maurer, Horst Bischof,
+ * German Conference on Pattern Recognition (GCPR), 2015.
  * ====================
  * Author: M.Hofer, 2015
  */
