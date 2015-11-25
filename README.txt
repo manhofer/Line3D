@@ -27,7 +27,7 @@ External dependencies:
 
 If all these libraries are properly installed, compiling should be no problem!
 The version numbers above are only rough guesses with respect to what I am
-using myself (it might as well work with much older/newer versions as well).
+using myself (it might as well work with much older/newer versions).
 
 There are also two external components, which are integrated into the sourcecode
 for your convenience:
