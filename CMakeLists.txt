@@ -83,6 +83,11 @@ SET(Line3D_HEADERS line3D.h view.h sparsematrix.h clustering.h universe.h segmen
 CUDA_ADD_LIBRARY(line3D SHARED ${Line3D_SOURCES} ${Line3D_HEADERS})
 target_link_libraries(line3D ${ALL_LIBRARIES})
 
+#----- Add main for bundler --------
+add_executable(runLine3D_bundler main_bundler.cpp)
+target_link_libraries(runLine3D_bundler line3D)
+target_link_libraries(runLine3D_bundler ${ALL_LIBRARIES})
+
 #----- Add main for VisualSfM --------
 add_executable(runLine3D_vsfm main_vsfm.cpp)
 target_link_libraries(runLine3D_vsfm line3D)

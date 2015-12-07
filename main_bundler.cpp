@@ -35,11 +35,8 @@ int main(int argc, char *argv[])
 {
     TCLAP::CmdLine cmd("LINE3D");
 
-    TCLAP::ValueArg<std::string> imgArg("i", "input_folder", "folder that contains the images", true, ".", "string");
+    TCLAP::ValueArg<std::string> imgArg("i", "input_folder", "folder that contains the bundler.rd.out file", true, ".", "string");
     cmd.add(imgArg);
-
-    TCLAP::ValueArg<std::string> nvmArg("m", "nvm_file", "full path to the VisualSfM result file (.nvm)", true, ".", "string");
-    cmd.add(nvmArg);
 
     TCLAP::ValueArg<std::string> outputArg("o", "output_folder", "folder where result and temporary files are stored (if not specified --> image folder)", false, "", "string");
     cmd.add(outputArg);
@@ -80,7 +77,6 @@ int main(int argc, char *argv[])
     // read arguments
     cmd.parse(argc,argv);
     std::string inputFolder = imgArg.getValue().c_str();
-    std::string nvmFile = nvmArg.getValue().c_str();
     std::string outputFolder = outputArg.getValue().c_str();
     if(outputFolder.length() == 0)
         outputFolder = inputFolder+"/Line3D/";
@@ -99,14 +95,6 @@ int main(int argc, char *argv[])
 
     std::string prefix = "[SYS] ";
 
-    // check if NVM file exists
-    boost::filesystem::path nvm(nvmFile);
-    if(!boost::filesystem::exists(nvm))
-    {
-        std::cerr << "NVM file " << nvmFile << " does not exist!" << std::endl;
-        return -1;
-    }
-
     // create output directory
     boost::filesystem::path dir(outputFolder);
     boost::filesystem::create_directory(dir);
@@ -118,159 +106,190 @@ int main(int argc, char *argv[])
                                           sigma_p,sigma_a,min_baseline,
                                           collinearity,verbose);
 
-    // read NVM file
-    std::ifstream nvm_file;
-    nvm_file.open(nvmFile.c_str());
+    // read bundle.rd.out
+    std::ifstream bundle_file;
+    bundle_file.open((inputFolder+"/bundle.rd.out").c_str());
 
-    std::string nvm_line;
-    std::getline(nvm_file,nvm_line); // ignore first line...
-    std::getline(nvm_file,nvm_line); // ignore second line...
+    std::string bundle_line;
+    std::getline(bundle_file,bundle_line); // ignore first line...
+    std::getline(bundle_file,bundle_line);
 
-    // read number of images
-    std::getline(nvm_file,nvm_line);
-    std::stringstream nvm_stream(nvm_line);
-    unsigned int num_cams;
-    nvm_stream >> num_cams;
+    // read number of images and 3D points
+    std::stringstream bundle_stream(bundle_line);
+    unsigned int num_cams,num_points;
+    bundle_stream >> num_cams >> num_points;
 
-    if(num_cams == 0)
+    std::cout << prefix << "num_cameras: " << num_cams << "  //  num_points: " << num_points << std::endl;
+
+    if(num_cams == 0 || num_points == 0)
     {
-        std::cerr << prefix << "No aligned cameras in NVM file!" << std::endl;
+        std::cerr << prefix << "No cameras and/or points in bundle file!" << std::endl;
         return -1;
     }
 
     // read camera data (sequentially)
-    std::vector<std::string> cams_imgFilenames(num_cams);
-    std::vector<float> cams_focals(num_cams);
-    std::vector<Eigen::Matrix3d> cams_rotation(num_cams);
-    std::vector<Eigen::Vector3d> cams_translation(num_cams);
-    std::vector<float> cams_distortion(num_cams);
+    std::map<unsigned int,float> cams_focals;
+    std::map<unsigned int,Eigen::Matrix3d> cams_rotation;
+    std::map<unsigned int,Eigen::Vector3d> cams_translation;
+    std::map<unsigned int,std::pair<float,float> > cams_distortion;
     for(unsigned int i=0; i<num_cams; ++i)
     {
-        std::getline(nvm_file,nvm_line);
+        // focal_length,distortion
+        double focal_length,dist1,dist2;
+        std::getline(bundle_file,bundle_line);
+        bundle_stream.str("");
+        bundle_stream.clear();
+        bundle_stream.str(bundle_line);
+        bundle_stream >> focal_length >> dist1 >> dist2;
 
-        // image filename
-        std::string filename;
-
-        // focal_length,quaternion,center,distortion
-        double focal_length,quat0,quat1,quat2,quat3;
-        double Cx,Cy,Cz,dist;
-
-        nvm_stream.str("");
-        nvm_stream.clear();
-        nvm_stream.str(nvm_line);
-        nvm_stream >> filename >> focal_length >> quat3 >> quat0 >> quat1 >> quat2;
-        nvm_stream >> Cx >> Cy >> Cz >> dist;
-
-        cams_imgFilenames[i] = filename;
         cams_focals[i] = focal_length;
-        cams_distortion[i] = dist;
+        cams_distortion[i] = std::pair<float,float>(dist1,dist2);
 
         // rotation
         Eigen::Matrix3d R;
-        R(0,0) = 1.0-2.0*quat1*quat1-2.0*quat2*quat2;
-        R(0,1) = 2.0*quat0*quat1-2.0*quat2*quat3;
-        R(0,2) = 2.0*quat0*quat2+2.0*quat1*quat3;
+        for(unsigned int j=0; j<3; ++j)
+        {
+            std::getline(bundle_file,bundle_line);
+            bundle_stream.str("");
+            bundle_stream.clear();
+            bundle_stream.str(bundle_line);
+            bundle_stream >> R(j,0) >> R(j,1) >> R(j,2);
+        }
 
-        R(1,0) = 2.0*quat0*quat1+2.0*quat2*quat3;
-        R(1,1) = 1.0-quat0*quat0-2.0*quat2*quat2;
-        R(1,2) = 2.0*quat1*quat2-2.0*quat0*quat3;
+        // flip 2nd and 3rd line
+        R(1,0) *= -1.0; R(1,1) *= -1.0; R(1,2) *= -1.0;
+        R(2,0) *= -1.0; R(2,1) *= -1.0; R(2,2) *= -1.0;
 
-        R(2,0) = 2.0*quat0*quat2-2.0*quat1*quat3;
-        R(2,1) = 2.0*quat1*quat2+2.0*quat0*quat3;
-        R(2,2) = 1.0-2.0*quat0*quat0-2.0*quat1*quat1;
+        cams_rotation[i] = R;
 
         // translation
-        Eigen::Vector3d C(Cx,Cy,Cz);
-        Eigen::Vector3d t = -R*C;
+        std::getline(bundle_file,bundle_line);
+        bundle_stream.str("");
+        bundle_stream.clear();
+        bundle_stream.str(bundle_line);
+        Eigen::Vector3d t;
+        bundle_stream >> t(0) >> t(1) >> t(2);
+
+        // flip y and z!
+        t(1) *= -1.0;
+        t(2) *= -1.0;
 
         cams_translation[i] = t;
-        cams_rotation[i] = R;
     }
 
-    // read number of images
-    std::getline(nvm_file,nvm_line); // ignore line...
-    std::getline(nvm_file,nvm_line);
-    nvm_stream.str("");
-    nvm_stream.clear();
-    nvm_stream.str(nvm_line);
-    unsigned int num_points;
-    nvm_stream >> num_points;
-
     // read features (for image similarity calculation)
-    std::vector<std::list<unsigned int> > cams_worldpointIDs(num_cams);
+    std::map<unsigned int,std::list<unsigned int> > cams_worldpointIDs;
     for(unsigned int i=0; i<num_points; ++i)
     {
-        // 3D position
-        std::getline(nvm_file,nvm_line);
-        std::istringstream iss_point3D(nvm_line);
-        double px,py,pz,colR,colG,colB;
-        iss_point3D >> px >> py >> pz;
-        iss_point3D >> colR >> colG >> colB;
+        // ignore first two...
+        std::getline(bundle_file,bundle_line);
+        std::getline(bundle_file,bundle_line);
 
-        // measurements
+        // view list
+        std::getline(bundle_file,bundle_line);
         unsigned int num_views;
-        iss_point3D >> num_views;
+
+        std::istringstream iss(bundle_line);
+        iss >> num_views;
 
         unsigned int camID,siftID;
         float posX,posY;
         for(unsigned int j=0; j<num_views; ++j)
         {
-            iss_point3D >> camID >> siftID;
-            iss_point3D >> posX >> posY;
+            iss >> camID >> siftID;
+            iss >> posX >> posY;
             cams_worldpointIDs[camID].push_back(i);
         }
     }
-    nvm_file.close();
+    bundle_file.close();
 
     // load images sequentially
     for(unsigned int i=0; i<num_cams; ++i)
     {
+        // transform ID
+        std::stringstream id_str;
+        id_str << std::setfill('0') << std::setw(8) << i;
+        std::string fixedID = id_str.str();
+
+        std::cout << prefix << "loading " << fixedID << " ..." << std::endl;
+
         // load image
-        cv::Mat image = cv::imread(inputFolder+"/"+cams_imgFilenames[i]);
+        std::string img_filename = "";
+        cv::Mat image;
+        std::vector<boost::filesystem::wpath> possible_imgs;
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".jpg"));
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".JPG"));
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".png"));
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".PNG"));
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".jpeg"));
+        possible_imgs.push_back(boost::filesystem::wpath(inputFolder+"/visualize/"+fixedID+".JPEG"));
 
-        // setup intrinsics
-        float px = float(image.cols)/2.0f;
-        float py = float(image.rows)/2.0f;
-        float f = cams_focals[i];
-
-        Eigen::Matrix3d K = Eigen::Matrix3d::Zero();
-        K(0,0) = f;
-        K(1,1) = f;
-        K(0,2) = px;
-        K(1,2) = py;
-        K(2,2) = 1.0;
-
-        // undistort (if necessary)
-        float d = cams_distortion[i];
-
-        if(fabs(d) > L3D_EPS)
+        bool image_found = false;
+        unsigned int pos = 0;
+        while(!image_found && pos < possible_imgs.size())
         {
-            std::cout << prefix << "undistorting... " << std::endl;
-
-            cv::Mat I = cv::Mat_<double>::eye(3,3);
-            cv::Mat cvK = cv::Mat_<double>::zeros(3,3);
-            cvK.at<double>(0,0) = K(0,0);
-            cvK.at<double>(1,1) = K(1,1);
-            cvK.at<double>(0,2) = K(0,2);
-            cvK.at<double>(1,2) = K(1,2);
-            cvK.at<double>(2,2) = 1.0;
-
-            cv::Mat cvDistCoeffs(4,1,CV_64FC1,cv::Scalar(0));
-            cvDistCoeffs.at<double>(0) = d;
-            cvDistCoeffs.at<double>(1) = d;
-            cvDistCoeffs.at<double>(2) = 0.0;
-            cvDistCoeffs.at<double>(3) = 0.0;
-
-            cv::Mat undistort_map_x;
-            cv::Mat undistort_map_y;
-
-            cv::initUndistortRectifyMap(cvK,cvDistCoeffs,I,cvK,cv::Size(image.cols, image.rows),
-                                        undistort_map_x.type(), undistort_map_x, undistort_map_y );
-            cv::remap(image,image,undistort_map_x,undistort_map_y,cv::INTER_LINEAR,cv::BORDER_CONSTANT);
+            if(boost::filesystem::exists(possible_imgs[pos]))
+            {
+                image_found = true;
+                img_filename = possible_imgs[pos].string();
+            }
+            ++pos;
         }
 
-        // add to system
-        line3D->addImage(i,image,K,cams_rotation[i],cams_translation[i],cams_worldpointIDs[i],max_width,loadAndStore);
+        if(image_found)
+        {
+            // load image
+            image = cv::imread(img_filename);
+
+            // setup intrinsics
+            float px = float(image.cols)/2.0f;
+            float py = float(image.rows)/2.0f;
+            float f = cams_focals[i];
+
+            Eigen::Matrix3d K = Eigen::Matrix3d::Zero();
+            K(0,0) = f;
+            K(1,1) = f;
+            K(0,2) = px;
+            K(1,2) = py;
+            K(2,2) = 1.0;
+
+            // undistort (if necessary)
+            float d1 = cams_distortion[i].first;
+            float d2 = cams_distortion[i].second;
+
+            if(fabs(d1) > L3D_EPS || fabs(d2) > L3D_EPS)
+            {
+                std::cout << prefix << "undistorting... " << std::endl;
+
+                cv::Mat I = cv::Mat_<double>::eye(3,3);
+                cv::Mat cvK = cv::Mat_<double>::zeros(3,3);
+                cvK.at<double>(0,0) = K(0,0);
+                cvK.at<double>(1,1) = K(1,1);
+                cvK.at<double>(0,2) = K(0,2);
+                cvK.at<double>(1,2) = K(1,2);
+                cvK.at<double>(2,2) = 1.0;
+
+                cv::Mat cvDistCoeffs(4,1,CV_64FC1,cv::Scalar(0));
+                cvDistCoeffs.at<double>(0) = d1;
+                cvDistCoeffs.at<double>(1) = d2;
+                cvDistCoeffs.at<double>(2) = 0.0;
+                cvDistCoeffs.at<double>(3) = 0.0;
+
+                cv::Mat undistort_map_x;
+                cv::Mat undistort_map_y;
+
+                cv::initUndistortRectifyMap(cvK,cvDistCoeffs,I,cvK,cv::Size(image.cols, image.rows),
+                                            undistort_map_x.type(), undistort_map_x, undistort_map_y );
+                cv::remap(image,image,undistort_map_x,undistort_map_y,cv::INTER_LINEAR,cv::BORDER_CONSTANT);
+            }
+
+            // add to system
+            line3D->addImage(i,image,K,cams_rotation[i],cams_translation[i],cams_worldpointIDs[i],max_width,loadAndStore);
+        }
+        else
+        {
+            std::cerr << prefix << "warning: no image found! (only jpg and png supported)" << std::endl;
+        }
     }
 
     // compute result

@@ -50,21 +50,25 @@ there (adaptaions of the CMakeLists.txt might be necessary).
 
 2, Usage:
 Line3D is a library which can be linked to any kind of C/C++ application.
-However, for convenience there is an executable included, which can process
+However, for your convenience there are executables included which can process
 bundler (http://www.cs.cornell.edu/~snavely/bundler/) and VisualSfM
 (http://ccwu.me/vsfm/) results.
 
 To compute a line-based 3D model for a SfM reconstruction using bundler
-or VisualSfM run the following executable:
+or VisualSfM run one of the following executables:
 
-./runLine3D_vsfm -i <path_to_folder_with_bundler.rd.out_file>
+for VisualSfM:
+./runLine3D_vsfm -i <path_to_image_folder> -m <path_to_NVM_file>
+
+for bundler:
+./runLine3D_bundler -i <path_to_folder_with_bundler.rd.out_file>
 
 That's it! The result will be placed in the folder:
-<path_to_folder_with_bundler.rd.out_file>/Line3D/
+<input_image_folder>/Line3D/
 
 If you want to use Line3D within your own 3D reconstruction pipeline
 you just need to either link it to your existing application, or create
-a new main.cpp file (have a look at main_vsfm.cpp) which can process
+a new main.cpp file (have a look at main_vsfm.cpp and main_bundler.cpp) which can process
 your SfM output.
 
 The following steps need to be followed to create 3D line models:
