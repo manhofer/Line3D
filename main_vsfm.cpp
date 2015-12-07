@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         R(0,2) = 2.0*quat0*quat2+2.0*quat1*quat3;
 
         R(1,0) = 2.0*quat0*quat1+2.0*quat2*quat3;
-        R(1,1) = 1.0-quat0*quat0-2.0*quat2*quat2;
+        R(1,1) = 1.0-2.0*quat0*quat0-2.0*quat2*quat2;
         R(1,2) = 2.0*quat1*quat2-2.0*quat0*quat3;
 
         R(2,0) = 2.0*quat0*quat2-2.0*quat1*quat3;
