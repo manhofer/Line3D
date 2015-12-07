@@ -256,8 +256,8 @@ int main(int argc, char *argv[])
             cvK.at<double>(2,2) = 1.0;
 
             cv::Mat cvDistCoeffs(4,1,CV_64FC1,cv::Scalar(0));
-            cvDistCoeffs.at<double>(0) = d;
-            cvDistCoeffs.at<double>(1) = d;
+            cvDistCoeffs.at<double>(0) = -d;
+            cvDistCoeffs.at<double>(1) = 0.0;
             cvDistCoeffs.at<double>(2) = 0.0;
             cvDistCoeffs.at<double>(3) = 0.0;
 
