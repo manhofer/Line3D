@@ -1,3 +1,9 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Important information: A new improved version of Line3D is now available:
+http://github.com/manhofer/Line3Dpp
+Therefore, this version will no longer be updated.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 --------------------------------------------------------------------------------
 Line3D - Line-based 3D Reconstruction Algorithm
 --------------------------------------------------------------------------------

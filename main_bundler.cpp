@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 {
     TCLAP::CmdLine cmd("LINE3D");
 
-    TCLAP::ValueArg<std::string> imgArg("i", "input_folder", "folder that contains the bundler.rd.out file", true, ".", "string");
+    TCLAP::ValueArg<std::string> imgArg("i", "input_folder", "folder that contains the bundle.rd.out file", true, ".", "string");
     cmd.add(imgArg);
 
     TCLAP::ValueArg<std::string> outputArg("o", "output_folder", "folder where result and temporary files are stored (if not specified --> image folder)", false, "", "string");
