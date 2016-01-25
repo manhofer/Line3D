@@ -19,6 +19,10 @@ Manuel Hofer, Michael Maurer, Horst Bischof,
 In Proceedings of the 37th German Conference on Pattern Recognition (GCPR),
 2015.
 --------------------------------------------------------------------------------
+Acknowledgements:
+This work has been supported by the Austrian Research Promotion Agency (FFG)
+project FreeLine (Bridge1/843450).
+--------------------------------------------------------------------------------
 
 1, Requirements:
 There is a CMakeLists.txt file included, which should enable you to easily 
